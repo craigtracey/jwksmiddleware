@@ -1,6 +1,7 @@
 package jwksmiddleware
 
 import (
+	"context"
 	"crypto/rsa"
 	"log"
 
@@ -15,13 +16,16 @@ type JWTConfig struct {
 }
 
 func getJWKSKeys(url string) (map[string]interface{}, error) {
-	set, err := jwk.FetchHTTP(url)
+	set, err := jwk.Fetch(context.Background(), url)
 	if err != nil {
 		return nil, err
 	}
-
 	keys := make(map[string]interface{})
-	for _, key := range set.Keys {
+	ctx := context.Background()
+	for iter := set.Iterate(ctx); iter.Next(ctx); {
+		pair := iter.Pair()
+		key := pair.Value.(jwk.Key)
+		
 		var val rsa.PublicKey
 		err := key.Raw(&val)
 		if err != nil {
